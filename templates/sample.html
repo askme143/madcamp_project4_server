@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/4.0.1/wavesurfer.min.js"></script>
+        <title>Sample page</title>
+    </head>
+    <body>
+        <p>Hello world!</p>
+        <audio class="audio-source" id="audio-1" src="{{ url_for('static', filename='temp/youtube_wav/1596176476ImSick아퍼FeatKidMilliLiltachiKimSeungmin김승민NOELCJAMM.wav') }}" controls loop>
+        </audio>
+        <!-- <audio class="audio-source" id="audio-2" src="{{ url_for('static', filename='temp/youtube_wav/1596176476ImSick아퍼FeatKidMilliLiltachiKimSeungmin김승민NOELCJAMM.wav') }}" controls>
+        </audio>
+        <audio class="audio-source" id="audio-3" src="{{ url_for('static', filename='temp/youtube_wav/1596176476ImSick아퍼FeatKidMilliLiltachiKimSeungmin김승민NOELCJAMM.wav') }}" controls>
+        </audio> -->
+        <button id="play">재생</button>
+        <button id="up">볼륨 업</button>
+        <button id="down">볼륨 다운</button>
+
+        <canvas id="canvas" width="150" height="150" style="border:1px solid #000000;"></canvas>
+        <br>
+        <div id="waveform"></div>
+
+        <script src="static/js/sample.js?ver=1.1"></script>
+    </body>
+</html>
