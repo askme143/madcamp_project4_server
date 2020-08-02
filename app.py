@@ -40,6 +40,8 @@ def youtube_upload():
          
         collection = db.audio
         my_document = {'url': url, 'email': email, 'title': title, 'filename': filename}
+        print(my_document)
+
         try:
             collection.insert_one(my_document)
         except:
