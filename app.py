@@ -23,7 +23,6 @@ def sample_home():
 def sample_input():
     return render_template('sample_input.html')
 
-# Test
 @app.route('/test')
 def test_():
     return "hello world"
@@ -58,6 +57,7 @@ def youtube_upload():
     except:
         return "fail", 500
 
+########## Youtube Audio Download API ##########
 @app.route('/api/youtube/download')
 def youtube_download():
     print("> Youtube Download")
@@ -139,6 +139,6 @@ def youtube_download_meta() :
     else:
         result['title'] = encodeString(result['title']).decode('UTF-8')
         return jsonify(result)
-        
+
 if __name__ == '__main__':
     app.run('0.0.0.0', port=8000, debug=True)
