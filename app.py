@@ -1,14 +1,18 @@
 import os
 import youtube
+import base64
 from pytube import YouTube
 from pymongo import MongoClient
-from flask import Flask, render_template, request, url_for, send_from_directory, make_response, send_file
+from flask import Flask, render_template, request, url_for, send_from_directory, make_response, send_file, jsonify
 
 app = Flask(__name__)
 client = MongoClient('localhost', 27017)
 
 db = client.prj4
 wav_path = os.getcwd() + "/static/temp/youtube_wav"
+
+def encodeString(string: str) :
+    return base64.b64encode(string.encode('utf-8'))
 
 # Sample
 @app.route('/')
@@ -29,7 +33,10 @@ def youtube_upload():
     print("> Youtube Upload")
     try:
         url = request.args.get('url')
-        title = request.args.get('title')
+        yt = YouTube(url)
+
+        title = yt.title
+        duration = yt.length
         email = request.args.get('email')
         filename = youtube.get_audio(url)
 
@@ -39,7 +46,7 @@ def youtube_upload():
             email = ""
          
         collection = db.audio
-        my_document = {'url': url, 'email': email, 'title': title, 'filename': filename}
+        my_document = {'url': url, 'email': email, 'title': title, 'filename': filename, 'duration': duration}
         print(my_document)
 
         try:
@@ -59,43 +66,79 @@ def youtube_download():
     title = request.args.get('title')
     url = request.args.get('url')
     email = request.args.get('email')
-
     collection = db.audio
     my_query = dict()
 
+    # Make a query
     if (title != None):
         my_query['email'] = email
         my_query['title'] = title
-
-        result = collection.find_one(my_query)
-
-        if (result == None):
-            return "Invalid request", 500
-        else:
-            return send_file(wav_path + "/" + result['filename'] + ".wav")
     elif (url != None):
         my_query['url'] = url
-
-        result = collection.find_one(my_query)
-        if (result == None):
-            try:
-                url = request.args.get('url')
-                title = YouTube(url).title
-                email = ""
-                filename = youtube.get_audio(url)
-                
-                collection = db.audio
-                my_document = {'url': url, 'email': email, 'title': title, 'filename': filename}
-                try:
-                    collection.insert_one(my_document)
-                finally:
-                    return send_file(wav_path + "/" + filename + ".wav")
-            except:
-                return "Invalid request", 500
-        else:
-            return send_file(wav_path + "/" + result['filename'] + ".wav")
     else:
         return "Invalid request", 500
 
+    result = collection.find_one(my_query)
+
+    # Find a .wav file and send it.
+    # If there is no such file, download it from Youtube.
+    if (result == None):
+        try:
+            yt = YouTube(url)
+
+            title = yt.title
+            duration = yt.length
+            email = ""
+            filename = youtube.get_audio(url)
+            
+            my_document = {'url': url, 'email': email, 'title': title, 'filename': filename, 'duration': duration}
+            try:
+                collection.insert_one(my_document)
+            finally:
+                return send_file(wav_path + "/" + filename + ".wav")
+        except:
+            return "Invalid request", 500
+    else:
+        return send_file(wav_path + "/" + result['filename'] + ".wav")
+
+@app.route('/api/youtube/download/meta')
+def youtube_download_meta() :
+    print("> Youtube Download Meta")
+    global wav_path
+
+    title = request.args.get('title')
+    url = request.args.get('url')
+    email = request.args.get('email')
+    collection = db.audio
+    my_query = dict()
+
+    # Make a query
+    if (title != None):
+        my_query['email'] = email
+        my_query['title'] = title
+    elif (url != None):
+        my_query['url'] = url
+    else:
+        return "Invalid request", 500
+
+    result = collection.find_one(my_query, { 'duration': 1, 'title': 1, '_id': 0 })
+
+    # Get meta data of an audio file from audio DB, and return it.
+    # If there is no data in the DB, get them from Youtube.
+    if (result == None):
+        try:
+            yt = YouTube(url)
+            title = encodeString(yt.title).decode('UTF-8')
+            length = yt.length
+        
+            my_document = {'title': title, 'length': length}
+
+            return my_document
+        except:
+            return "Invalid request", 500
+    else:
+        result['title'] = encodeString(result['title']).decode('UTF-8')
+        return jsonify(result)
+        
 if __name__ == '__main__':
     app.run('0.0.0.0', port=8000, debug=True)
