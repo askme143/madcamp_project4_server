@@ -28,6 +28,142 @@ def sample_input():
 def test_():
     return "hello world"
 
+@app.route('/api/sign_up')
+def sign_up():
+    user_id = request.args.get('user_id')
+    password = request.args.get('password')
+
+    if(user_id == '' or password == ''):
+        return "fill ID and password"
+
+    collection = db.login_info
+
+    is_already = collection.find({"user_id":user_id})
+
+    if is_already.count():
+        return "duplicate ID"
+
+    my_document = {'user_id': user_id, 'password': password}
+    print(my_document)
+
+    try:
+        collection.insert_one(my_document)
+    except:
+        return "Failed"
+
+    return "sign up success"
+
+@app.route('/api/login')
+def login():
+    user_id = request.args.get('user_id')
+    password = request.args.get('password')
+
+    collection = db.login_info
+
+    is_user = collection.find_one({'user_id':user_id, 'password': password})
+
+    if not is_user:
+        return "login failed"
+
+    response = dict()
+
+    user_info = [user_id, password]
+
+    preset_info = []
+
+    preset_list = db.preset.find({'user_id':user_id})
+
+    for preset in preset_list:
+        preset_info.append([preset['preset_num'], preset['preset_info']])
+
+    response['user_info'] = user_info
+    response['preset_info'] = preset_info
+
+    return jsonify(response)
+
+@app.route('/api/preset/add', methods=['POST'])
+def add_preset():
+    user_id = request.form['user_id']
+    password = request.form['password']
+    preset_num = request.form['preset_num']
+    preset_info = request.form['preset_info']
+    
+    collection_login = db.login_info
+
+    is_user = collection_login.find_one({'user_id':user_id, 'password': password})
+
+    if not is_user:
+        return "User info incorrect"
+
+    collection = db.preset
+
+    is_already = collection.find({'user_id':user_id, 'preset_num':preset_num})
+
+    if is_already.count():
+        return 'There is already preset'
+    
+    else:
+        my_document = {'user_id': user_id, 'preset_num': preset_num, 'preset_info':preset_info}
+        print(my_document)
+        collection.insert(my_document)
+
+    return 'upload success'
+
+@app.route('/api/preset/edit', methods=['POST'])
+def edit_preset():
+    user_id = request.form['user_id']
+    password = request.form['password']
+    preset_num = request.form['preset_num']
+    preset_info = request.form['preset_info']
+    
+    collection_login = db.login_info
+
+    is_user = collection_login.find_one({'user_id':user_id, 'password': password})
+
+    if not is_user:
+        return "User info incorrect"
+
+    collection = db.preset
+
+    is_already = collection.find({'user_id':user_id, 'preset_num':preset_num})
+
+    if not is_already.count():
+        return 'There is not preset'
+    
+    else:
+        my_document = {'user_id': user_id, 'preset_num': preset_num}
+        print(my_document)
+        collection.find_one_and_update(my_document, {'$set': {'preset_info': preset_info}})
+
+    return 'edit success'
+
+@app.route('/api/preset/delete', methods=['POST'])
+def del_preset():
+    user_id = request.form['user_id']
+    password = request.form['password']
+    preset_num = request.form['preset_num']
+    
+    collection_login = db.login_info
+
+    is_user = collection_login.find_one({'user_id':user_id, 'password': password})
+
+    if not is_user:
+        return "User info incorrect"
+
+    collection = db.preset
+
+    is_already = collection.find({'user_id':user_id, 'preset_num':preset_num})
+
+    if not is_already.count():
+        return 'There is not preset info'
+    
+    else:
+        my_document = {'user_id': user_id, 'preset_num': preset_num}
+        print(my_document)
+        collection.delete_one(my_document)
+
+    return 'delete success'
+
 @app.route('/api/youtube/upload')
 def youtube_upload():
     print("> Youtube Upload")
@@ -129,7 +265,7 @@ def youtube_download_meta() :
     # Make a query
     if (title != None):
         my_query['email'] = email
-        my_query['title'] = title
+        my_query['title'] = titles
     elif (url != None):
         my_query['url'] = url
     else:
