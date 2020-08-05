@@ -33,7 +33,70 @@ def change_audioseg_tempo(audiosegment, tempo_ratio):
 
     return new_seg
 
+#get bpm and sync arrarys from the wav file
+def bpm_and_sync(file_path):
+    print("exe")
+    x, sr = librosa.load(file_path)
+    print("exe2")
+    bpm, beat_times = librosa.beat.beat_track(x, sr=sr, start_bpm=120, units='time')
+    term = []
 
+    for i in range(len(beat_times) - 1):
+        term.append(beat_times[i+1] - beat_times[i])
+    average = sum(term, 0.0)/len(term)
+    mid = statistics.median(term)
+
+
+    term_fixed_a = []
+
+    for t in term:
+        is_ok_a = t / average
+        if is_ok_a > 0.9 and is_ok_a < 1.1:
+            term_fixed_a.append(t)
+    
+    average_fixed_a = sum(term_fixed_a, 0.0)/len(term_fixed_a)
+    bpm_fixed_a = round(60/average_fixed_a)
+
+    beat_times_pcd = beat_times
+    term_pcd = term
+    one_term_length = 60 / bpm_fixed_a
+
+    term_error = []
+    for t in term_pcd:
+        term_error.append(abs(t - one_term_length))
+
+    most_exact_beat = term_error.index(min(term_error))
+
+    start_beat = beat_times[most_exact_beat]
+
+    while(1):
+        if start_beat - one_term_length < 0:
+            break
+        start_beat -= one_term_length
+
+    sync_time_1 = []
+    sync_time_2 = []
+    sync_time_3 = []
+    sync_time_4 = []
+
+    beat_time_sync = start_beat
+
+    while(1):
+        if beat_time_sync > beat_times[-1]:
+            break
+        sync_time_1.append(beat_time_sync)
+        sync_time_2.append(beat_time_sync + one_term_length * 1)
+        sync_time_3.append(beat_time_sync + one_term_length * 2)
+        sync_time_4.append(beat_time_sync + one_term_length * 3)
+        beat_time_sync += one_term_length * 4
+
+    return [bpm_fixed_a, [sync_time_1, sync_time_2, sync_time_3, sync_time_4]]
+
+if __name__ == '__main__':
+    bpm,sync = bpm_and_sync('./static/temp/youtube_wav/MVZICO지코Anysong아무노래.wav')
+    print(bpm)
+    print(sync)
+'''
 file_name = '쇼미더머니4Episode5송민호MINO겁FearFeatTaeyangofBIGBANG'
 wav_path = './static/temp/youtube_wav'
 # change_file_path = 'audio_change/' + file_name + '_changed.wav'
@@ -41,7 +104,11 @@ wav_path = './static/temp/youtube_wav'
 #check bpm of song
 x, sr = librosa.load(wav_path + '/' + file_name + '.wav')
 bpm, beat_times = librosa.beat.beat_track(x, sr=sr, start_bpm=120, units='time')
+
 print(bpm)
+
+average_fixed_m = sum(term_fixed_m, 0.0)/len(term_fixed_m)
+'''
 #print(beat_times)
 
 # #Correct bpm with the term list

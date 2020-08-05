@@ -1,6 +1,7 @@
 import os
 import youtube
 import base64
+import bpm
 from pytube import YouTube
 from pymongo import MongoClient
 from flask import Flask, render_template, request, url_for, send_from_directory, make_response, send_file, jsonify
@@ -30,6 +31,9 @@ def test_():
 @app.route('/api/youtube/upload')
 def youtube_upload():
     print("> Youtube Upload")
+
+    #bpm_yt, sync_info = bpm.bpm_and_sync('./static/temp/youtube_wav/MVZICO지코Anysong아무노래.wav')
+
     try:
         url = request.args.get('url')
         yt = YouTube(url)
@@ -37,7 +41,15 @@ def youtube_upload():
         title = yt.title
         duration = yt.length
         email = request.args.get('email')
+
         filename = youtube.get_audio(url)
+
+        print("here")
+        print('./static/temp/youtube_wav/' + filename + '.wav')
+
+        bpm_yt, sync_info = bpm.bpm_and_sync('./static/temp/youtube_wav/' + filename + '.wav')
+
+        print("here2")
 
         if (title == None):
             title = YouTube(url).title
@@ -45,7 +57,7 @@ def youtube_upload():
             email = ""
          
         collection = db.audio
-        my_document = {'url': url, 'email': email, 'title': title, 'filename': filename, 'duration': duration}
+        my_document = {'url': url, 'email': email, 'title': title, 'filename': filename, 'duration': duration, 'bpm':bpm_yt, 'sync_info': sync_info}
         print(my_document)
 
         try:
@@ -90,8 +102,10 @@ def youtube_download():
             duration = yt.length
             email = ""
             filename = youtube.get_audio(url)
+
+            bpm_yt, sync_info = bpm.bpm_and_sync(wav_path + filename + '.wav')
             
-            my_document = {'url': url, 'email': email, 'title': title, 'filename': filename, 'duration': duration}
+            my_document = {'url': url, 'email': email, 'title': title, 'filename': filename, 'duration': duration, 'bpm':bpm_yt, 'sync_info': sync_info}
             try:
                 collection.insert_one(my_document)
             finally:
@@ -121,7 +135,7 @@ def youtube_download_meta() :
     else:
         return "Invalid request", 500
 
-    result = collection.find_one(my_query, { 'duration': 1, 'title': 1, '_id': 0 })
+    result = collection.find_one(my_query, { 'duration': 1, 'title': 1, 'bpm':1, 'sync_info':1, '_id': 0 })
 
     # Get meta data of an audio file from audio DB, and return it.
     # If there is no data in the DB, get them from Youtube.
