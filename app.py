@@ -234,12 +234,12 @@ def youtube_download():
         try:
             yt = YouTube(url)
 
+            filename = youtube.get_audio(url)
             title = yt.title
             duration = yt.length
             email = ""
-            filename = youtube.get_audio(url)
 
-            bpm_yt, sync_info = bpm.bpm_and_sync(wav_path + filename + '.wav')
+            bpm_yt, sync_info = bpm.bpm_and_sync('./static/temp/youtube_wav/' + filename + '.wav')
             
             my_document = {'url': url, 'email': email, 'title': title, 'filename': filename, 'duration': duration, 'bpm':bpm_yt, 'sync_info': sync_info}
             try:
