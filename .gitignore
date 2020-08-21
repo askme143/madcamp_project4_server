@@ -1,5 +1,6 @@
 *.mp3
 *.wav
+.vscode
 
 __pycache__/
 *.py[cod]
